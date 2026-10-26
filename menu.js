@@ -8,7 +8,8 @@
 const $ = (id) => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined ? window.Telegram.WebApp : null;
-const inTelegram = !!(TG && TG.initData);
+// открыто кнопкой под полем ввода — initData пустой (так задумано в Telegram), поэтому узнаём Telegram по платформе
+const inTelegram = !!(TG && (TG.initData || (TG.platform && TG.platform !== "unknown")));
 const MAXLEN = Math.max(20, Math.min(1000, Number(Q.get("max")) || 400));
 const GRID = 1000;
 const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
@@ -103,7 +104,11 @@ function sendNote(data) {
   }
   const payload = Object.assign({ v: 2, nick: ST.nick }, data, { text: String(data.text || "").trim().slice(0, MAXLEN) });
   if (inTelegram) {
-    TG.sendData(JSON.stringify(payload));                     // окно закроется, бот ответит в чате
+    try {
+      TG.sendData(JSON.stringify(payload));                   // окно закроется, бот ответит в чате
+    } catch (e) {                                             // открыто не кнопкой под полем ввода — отправить нельзя
+      message("Не получилось отправить", "Открой меню кнопкой «📱 Открыть KNOXPAD» под полем ввода в чате с ботом (если её нет — напиши боту /start) и отправь ещё раз.");
+    }
   } else {
     message("Это предпросмотр", "В Telegram сейчас ушло бы:\n" + JSON.stringify(payload, null, 1));
   }
