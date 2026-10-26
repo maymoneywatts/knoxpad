@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Записка в мире стримера</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+</head>
+<body>
+<canvas id="map"></canvas>
+
+<header class="pz-bar">
+  <div class="title">Округ Нокс <small>Kentucky, 1993</small></div>
+  <button class="pz-btn icon" id="helpBtn" aria-label="Как это работает">?</button>
+</header>
+
+<div class="tools">
+  <button class="pz-btn icon" id="zin" aria-label="Приблизить">+</button>
+  <button class="pz-btn icon" id="zout" aria-label="Отдалить">−</button>
+  <button class="pz-btn icon" id="toMe" aria-label="Где стример" title="Где стример">◎</button>
+</div>
+
+<section class="sheet" id="sheet">
+  <div class="grip" id="grip"></div>
+  <div class="step" id="stepWhere">
+    <div class="hint" id="hint">Ткни на карте, где оставить записку</div>
+    <div class="where hide" id="where">
+      <div class="pin">📍</div>
+      <div><b id="whereMain"></b><small id="whereSub"></small></div>
+    </div>
+    <div class="streamer" id="streamer"></div>
+  </div>
+  <div class="label">Куда положить</div>
+  <div class="chips" id="places"></div>
+  <div class="paper">
+    <textarea id="text" maxlength="400" placeholder="Напиши записку… Стример прочитает её в эфире, когда найдёт."></textarea>
+    <div class="sign"><span id="nick"></span><span id="count">0/400</span></div>
+  </div>
+  <button class="pz-btn big" id="send" disabled>Спрятать записку</button>
+</section>
+
+<div class="modal hide" id="modal">
+  <div class="pz-panel">
+    <div class="pz-title" id="modalTitle"></div>
+    <div class="body" id="modalBody"></div>
+    <button class="pz-btn" id="modalOk">Понятно</button>
+  </div>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

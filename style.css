@@ -1,0 +1,77 @@
+/* Окно-карта для Telegram в стиле интерфейса Project Zomboid: тёмные полупрозрачные панели,
+   прямые углы, светлая тонкая рамка, белый текст; записка — бумага с почерком. */
+:root {
+  --paper: #dbd7c0;            /* фон бумажной карты, как в игре */
+  --panel: rgba(18, 18, 18, 0.88);
+  --panel2: rgba(38, 38, 38, 0.92);
+  --line: rgba(255, 255, 255, 0.32);
+  --line2: rgba(255, 255, 255, 0.6);
+  --text: #f2efe6;
+  --muted: #b9b3a3;
+  --accent: #c8a24a;           /* «выделено» — тёплое золото, как подсветка пунктов в игре */
+  --danger: #c0392b;
+  --note: #efe4c8;
+  --ink: #2b2236;
+  --sheet-h: 46vh;
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; overflow: hidden; background: var(--paper); color: var(--text);
+  font: 400 17px/1.3 "PT Sans Narrow", "Arial Narrow", system-ui, sans-serif; }
+canvas#map { position: fixed; inset: 0; width: 100%; height: 100%; touch-action: none; display: block; }
+.hide { display: none !important; }
+
+/* ---------- панели и кнопки «как в игре» ---------- */
+.pz-panel { background: var(--panel); border: 1px solid var(--line); box-shadow: 0 6px 22px rgba(0, 0, 0, 0.45); }
+.pz-btn { font: 700 17px "PT Sans Narrow", sans-serif; color: var(--text); background: var(--panel2);
+  border: 1px solid var(--line); border-radius: 0; padding: 9px 14px; cursor: pointer; text-transform: uppercase;
+  letter-spacing: 0.5px; box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08), inset 0 -2px 0 rgba(0, 0, 0, 0.35); }
+.pz-btn:active { background: #4a4a4a; border-color: var(--line2); }
+.pz-btn.icon { width: 42px; height: 42px; padding: 0; font-size: 22px; line-height: 40px; text-transform: none; }
+.pz-btn.big { width: 100%; padding: 13px; font-size: 19px; margin-top: 10px; background: #3c3221; border-color: var(--accent); color: #fff3d6; }
+.pz-btn.big:disabled { opacity: 0.45; border-color: var(--line); background: var(--panel2); color: var(--muted); }
+.pz-title { font: 700 18px "PT Sans Narrow", sans-serif; text-transform: uppercase; letter-spacing: 1px; padding: 9px 12px;
+  background: rgba(255, 255, 255, 0.06); border-bottom: 1px solid var(--line); }
+
+header.pz-bar { position: fixed; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; background: linear-gradient(rgba(18, 18, 18, 0.9), rgba(18, 18, 18, 0.72)); border-bottom: 1px solid var(--line); z-index: 3; }
+header .title { font: 700 21px "PT Sans Narrow", sans-serif; text-transform: uppercase; letter-spacing: 1.5px; }
+header .title small { display: block; font-weight: 400; font-size: 12px; letter-spacing: 1px; color: var(--muted); }
+
+.tools { position: fixed; right: 10px; top: 70px; display: flex; flex-direction: column; gap: 6px; z-index: 3; }
+
+/* ---------- нижняя панель ---------- */
+.sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 4; background: var(--panel); border-top: 1px solid var(--line);
+  padding: 4px 14px calc(12px + env(safe-area-inset-bottom)); max-height: 72vh; overflow-y: auto;
+  box-shadow: 0 -8px 26px rgba(0, 0, 0, 0.4); transition: transform 0.2s ease; }
+.sheet.min { transform: translateY(calc(100% - 92px)); }
+.grip { width: 54px; height: 5px; background: var(--line2); margin: 4px auto 10px; cursor: pointer; }
+.hint { font-size: 18px; color: var(--accent); text-transform: uppercase; letter-spacing: 0.5px; }
+.where { display: flex; gap: 10px; align-items: center; }
+.where .pin { font-size: 26px; }
+.where b { font-size: 19px; display: block; }
+.where small { color: var(--muted); font-size: 15px; }
+.where.bad b { color: #ff8f80; }
+.streamer { margin-top: 6px; font-size: 14px; color: var(--muted); }
+.streamer b { color: #ff8f80; }
+.label { margin: 12px 0 6px; font-size: 13px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.chips::-webkit-scrollbar { display: none; }
+.chip { flex: 0 0 auto; font: 700 15px "PT Sans Narrow", sans-serif; color: var(--text); background: var(--panel2); border: 1px solid var(--line);
+  padding: 7px 11px; cursor: pointer; white-space: nowrap; }
+.chip.on { border-color: var(--accent); color: #fff3d6; background: #3c3221; }
+
+/* записка — листок */
+.paper { margin-top: 12px; background: var(--note); color: var(--ink); padding: 10px 14px 6px; position: relative;
+  background-image: linear-gradient(rgba(43, 34, 54, 0.09) 1px, transparent 1px); background-size: 100% 30px;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.4); transform: rotate(-0.6deg); }
+.paper textarea { width: 100%; min-height: 96px; border: 0; outline: 0; background: transparent; resize: none; color: var(--ink);
+  font: 600 22px/30px "Caveat", "Segoe Print", cursive; }
+.paper textarea::placeholder { color: rgba(43, 34, 54, 0.45); }
+.paper .sign { display: flex; justify-content: space-between; font: 700 19px "Caveat", cursive; color: #5b4a3a; }
+.paper .sign #count { font: 400 13px "PT Sans Narrow", sans-serif; color: #7b6a58; align-self: end; }
+
+/* окно-сообщение */
+.modal { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.55); display: grid; place-items: center; z-index: 9; padding: 18px; }
+.modal .pz-panel { max-width: 420px; width: 100%; }
+.modal .body { padding: 12px; white-space: pre-line; font-size: 17px; }
+.modal .pz-btn { margin: 0 12px 12px; width: calc(100% - 24px); }
