@@ -3,44 +3,179 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>Записка в мире стримера</title>
+<title>KNOXPAD</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Oswald:wght@600;700&family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
-<canvas id="map"></canvas>
 
-<header class="pz-bar">
-  <div class="title">Округ Нокс <small>Kentucky, 1993</small></div>
-  <button class="pz-btn icon" id="helpBtn" aria-label="Как это работает">?</button>
-</header>
-
-<div class="tools">
-  <button class="pz-btn icon" id="zin" aria-label="Приблизить">+</button>
-  <button class="pz-btn icon" id="zout" aria-label="Отдалить">−</button>
-  <button class="pz-btn icon" id="toMe" aria-label="Где стример" title="Где стример">◎</button>
-</div>
-
-<section class="sheet" id="sheet">
-  <div class="grip" id="grip"></div>
-  <div class="step" id="stepWhere">
-    <div class="hint" id="hint">Ткни на карте, где оставить записку</div>
-    <div class="where hide" id="where">
-      <div class="pin">📍</div>
-      <div><b id="whereMain"></b><small id="whereSub"></small></div>
+<!-- ГЛАВНАЯ: меню бота -->
+<section class="screen page on" id="scrHome">
+  <div class="hero"><img src="bot/welcome.jpg" alt="KNOXPAD — записки в мире стримера"></div>
+  <div class="pad">
+    <div class="pz-panel card status">
+      <div class="row"><span class="k">Подпись</span><b class="nickText">—</b><button class="link" id="nickEdit">изменить</button></div>
+      <div class="row"><span class="k">Стример</span><span id="hStreamer">не в игре</span></div>
+      <div class="row" id="hLimitRow"><span class="k">Записки</span><span id="hLimit"></span></div>
     </div>
-    <div class="streamer" id="streamer"></div>
+
+    <div class="label">Оставить записку</div>
+    <div class="tiles">
+      <button class="tile" data-go="map">
+        <svg viewBox="0 0 32 32"><path d="M4 7l8-3 8 3 8-3v21l-8 3-8-3-8 3z M12 4v21 M20 7v21"/><circle class="red" cx="22" cy="13" r="2.6"/></svg>
+        <span><b>Записка на карте</b><small>Ткни в любое место Нокса — ляжет в ближайший ящик</small></span>
+      </button>
+      <button class="tile" data-go="near">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="9" r="4"/><path d="M8 28c0-6 3.5-10 8-10s8 4 8 10"/><path class="red" d="M25 6l3 3-3 3"/></svg>
+        <span><b>Рядом со стримером</b><small>В паре шагов от него — найдёт быстро</small></span>
+      </button>
+      <button class="tile" data-go="towns">
+        <svg viewBox="0 0 32 32"><path d="M3 28h26 M5 28V14l6-4 6 4v14 M17 28V8h10v20 M8 18h2 M8 23h2 M20 12h4 M20 17h4 M20 22h4"/></svg>
+        <span><b>В городе</b><small>Появится, когда стример туда доберётся</small></span>
+      </button>
+    </div>
+
+    <div class="label">Ещё</div>
+    <div class="tiles">
+      <button class="tile boss" data-go="boss">
+        <svg viewBox="0 0 32 32"><path d="M8 13c0-6 3.6-9 8-9s8 3 8 9c0 3-1 5-3 6v4H11v-4c-2-1-3-3-3-6z"/><circle class="red fill" cx="12.5" cy="13" r="2"/><circle class="red fill" cx="19.5" cy="13" r="2"/><path d="M13 23v4 M16 23v4 M19 23v4"/></svg>
+        <span><b>Заказать босса</b><small id="bossTileSub">Донат — и начнётся охота</small></span>
+      </button>
+      <button class="tile soon" disabled>
+        <svg viewBox="0 0 32 32"><path d="M4 10l12-6 12 6v13l-12 6-12-6z M4 10l12 6 12-6 M16 16v13 M10 7l12 6"/></svg>
+        <span><b>Посылка с припасами</b><small>Стример ещё придумывает</small></span>
+        <i class="stamp">скоро</i>
+      </button>
+      <button class="tile" data-go="help">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="12"/><path d="M12 12.5c0-2.5 2-4 4-4s4 1.4 4 3.6c0 3.4-4 3.2-4 6.4"/><circle class="fill" cx="16" cy="23" r="1.3"/></svg>
+        <span><b>Как это работает</b><small>Модерация, «Локатор», что увидит стрим</small></span>
+      </button>
+    </div>
+    <p class="foot">Записки бесплатные. Мат, оскорбления и ссылки модератор не пропустит.</p>
   </div>
-  <div class="label">Куда положить</div>
-  <div class="chips" id="places"></div>
-  <div class="paper">
-    <textarea id="text" maxlength="400" placeholder="Напиши записку… Стример прочитает её в эфире, когда найдёт."></textarea>
-    <div class="sign"><span id="nick"></span><span id="count">0/400</span></div>
+</section>
+
+<!-- КАРТА -->
+<section class="screen" id="scrMap">
+  <canvas id="map"></canvas>
+  <header class="pz-bar">
+    <button class="pz-btn icon back" aria-label="Назад">‹</button>
+    <div class="title">Округ Нокс <small>Kentucky, 1993</small></div>
+    <button class="pz-btn icon" id="helpBtn" aria-label="Как это работает">?</button>
+  </header>
+  <div class="tools">
+    <button class="pz-btn icon" id="zin" aria-label="Приблизить">+</button>
+    <button class="pz-btn icon" id="zout" aria-label="Отдалить">−</button>
+    <button class="pz-btn icon" id="toMe" aria-label="Где стример" title="Где стример">◎</button>
   </div>
-  <button class="pz-btn big" id="send" disabled>Спрятать записку</button>
+  <section class="sheet" id="sheet">
+    <div class="grip" id="grip"></div>
+    <div class="step" id="stepWhere">
+      <div class="hint" id="hint">Ткни на карте, где оставить записку</div>
+      <div class="where hide" id="where">
+        <div class="pin">📍</div>
+        <div><b id="whereMain"></b><small id="whereSub"></small></div>
+      </div>
+      <div class="streamer" id="streamer"></div>
+    </div>
+    <div class="label">Куда положить</div>
+    <div class="chips" id="places"></div>
+    <div class="paper">
+      <textarea id="text" maxlength="400" placeholder="Напиши записку… Стример прочитает её в эфире, когда найдёт."></textarea>
+      <div class="sign"><span class="nickSign"></span><span id="count">0/400</span></div>
+    </div>
+    <button class="pz-btn big" id="send" disabled>Спрятать записку</button>
+  </section>
+</section>
+
+<!-- ЗАПИСКА РЯДОМ СО СТРИМЕРОМ / В ГОРОДЕ -->
+<section class="screen page" id="scrNote">
+  <header class="pz-bar static">
+    <button class="pz-btn icon back" aria-label="Назад">‹</button>
+    <div class="title" id="noteTitle">Записка<small id="noteSub"></small></div>
+    <span class="spacer"></span>
+  </header>
+  <div class="pad">
+    <div class="label">Куда положить</div>
+    <div class="chips wrap" id="places2"></div>
+    <div class="paper">
+      <textarea id="text2" maxlength="400" placeholder="Напиши записку… Стример прочитает её в эфире, когда найдёт."></textarea>
+      <div class="sign"><span class="nickSign"></span><span id="count2">0/400</span></div>
+    </div>
+    <button class="pz-btn big" id="send2" disabled>Спрятать записку</button>
+  </div>
+</section>
+
+<!-- ГОРОДА -->
+<section class="screen page" id="scrTowns">
+  <header class="pz-bar static">
+    <button class="pz-btn icon back" aria-label="Назад">‹</button>
+    <div class="title">В каком городе?<small>появится, когда стример туда доберётся</small></div>
+    <span class="spacer"></span>
+  </header>
+  <div class="pad"><div class="towns" id="towns"></div></div>
+</section>
+
+<!-- БОСС -->
+<section class="screen page" id="scrBoss">
+  <header class="pz-bar static">
+    <button class="pz-btn icon back" aria-label="Назад">‹</button>
+    <div class="title">Босс<small>охота на стримера</small></div>
+    <span class="spacer"></span>
+  </header>
+  <div class="hunt"><img src="bot/hunt.png" alt="Охота началась"></div>
+  <div class="pad">
+    <div class="pz-panel card">
+      <p>Твой ник станет именем босса. Огромный зомби со свитой появится в сотне метров от стримера и пойдёт по следу.</p>
+      <ul class="facts">
+        <li>всегда знает, где стример</li>
+        <li>обходит, пока стример смотрит, — и бросается, когда тот отвернётся</li>
+        <li>сбивает с ног</li>
+        <li>на экране стрима — кровавое «ОХОТА НАЧАЛАСЬ»</li>
+      </ul>
+      <p class="muted">В сообщении к донату напиши боевой клич — его увидят на стриме. Босса выпускает стример кнопкой.</p>
+    </div>
+    <div class="price" id="bossPrice"></div>
+    <button class="pz-btn big blood" id="bossDonate">Задонатить</button>
+    <p class="foot" id="bossNote"></p>
+  </div>
+</section>
+
+<!-- ПОДПИСЬ -->
+<section class="screen page" id="scrNick">
+  <header class="pz-bar static">
+    <button class="pz-btn icon back" aria-label="Назад">‹</button>
+    <div class="title">Подпись<small>ник на Twitch — его увидят на стриме</small></div>
+    <span class="spacer"></span>
+  </header>
+  <div class="pad">
+    <div class="paper small"><input id="nickInput" maxlength="25" placeholder="твой ник" autocomplete="off"></div>
+    <div class="chips wrap" id="nickHints"></div>
+    <button class="pz-btn big" id="nickSave">Подписать так</button>
+    <p class="foot">До 25 букв и цифр, без ссылок.</p>
+  </div>
+</section>
+
+<!-- КАК ЭТО РАБОТАЕТ -->
+<section class="screen page" id="scrHelp">
+  <header class="pz-bar static">
+    <button class="pz-btn icon back" aria-label="Назад">‹</button>
+    <div class="title">Как это работает<small>записки в мире стримера</small></div>
+    <span class="spacer"></span>
+  </header>
+  <div class="pad">
+    <ol class="pz-panel card steps">
+      <li><b>Выбери место.</b> Точка на карте, рядом со стримером или в городе.</li>
+      <li><b>Выбери, куда положить.</b> Мусорка, дом, труп, бардачок машины — или ближайший ящик у точки.</li>
+      <li><b>Напиши текст</b> и нажми «Спрятать записку».</li>
+      <li><b>Модератор проверит</b> записку, и она появится в игре. Бот напишет, когда её спрячут, найдут и прочитают.</li>
+      <li><b>Стример ищет</b> её с телефоном-«Локатором» и читает вслух в эфире. До этого текст никто не увидит.</li>
+    </ol>
+    <p class="foot">Ненайденная записка со временем истлеет — бот скажет. Записки бесплатные; мат, оскорбления и ссылки не пройдут.</p>
+  </div>
 </section>
 
 <div class="modal hide" id="modal">
@@ -51,6 +186,7 @@
   </div>
 </div>
 
+<script src="menu.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

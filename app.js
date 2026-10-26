@@ -1,11 +1,6 @@
-// Окно-карта для Telegram-бота стримера: бумажная карта Knox County (как в игре на M), зритель тыкает точку,
-// выбирает «куда положить», пишет записку — и окно отдаёт это боту (Telegram.WebApp.sendData).
-// Адрес открывает бот, подставляя параметры: ?sx=&sy= — где стример (клетки игры), &nick= — подпись, &max= — длина текста.
+// Экран «Записка на карте» меню KNOXPAD: бумажная карта Knox County (как в игре на M), зритель тыкает точку,
+// выбирает «куда положить», пишет записку — и menu.js отдаёт её боту. Общее ($, Q, TG, me, grid, sendNote…) — в menu.js.
 "use strict";
-const $ = (id) => document.getElementById(id);
-const Q = new URLSearchParams(location.search);
-const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined ? window.Telegram.WebApp : null;
-const inTelegram = !!(TG && TG.initData);
 
 // цвета бумажной карты игры (ISMapDefinitions.lua, initDefaultStyleV1)
 const COLORS = {
@@ -22,10 +17,6 @@ const BUILDING = {
 };
 const PLACES = [["nearest", "Ближайший ящик"], ["trash", "Мусорка"], ["building", "В доме"], ["car", "Машина"],
                 ["corpse", "Труп"], ["fake", "Труп, который встанет"]];
-const GRID = 1000;
-const LETTERS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
-const MAXLEN = Math.max(20, Math.min(1000, Number(Q.get("max")) || 400));
-
 let MAP = null, forest = null;
 const paths = {};                    // "cx,cy" -> {layer: Path2D}
 const canvas = $("map"), ctx = canvas.getContext("2d");
@@ -33,7 +24,6 @@ let W = 0, H = 0, dpr = 1;
 const view = { s: 0.05, x: 10600, y: 9700 };      // s — пикселей экрана на клетку; x,y — центр экрана в клетках игры
 let pick = null;                     // {x, y, info}
 let place = "nearest";
-const me = Q.has("sx") ? { x: Number(Q.get("sx")), y: Number(Q.get("sy")) } : null;
 
 // ------------------------------------------------------------ загрузка
 async function load() {
@@ -211,7 +201,6 @@ function hit(layer, x, y) {
   }
   return false;
 }
-function grid(x, y) { return LETTERS[Math.floor(x / GRID)] + (Math.floor(y / GRID) + 1); }
 function nearestTown(x, y) {
   let best = null, bd = 1e12;
   for (const l of MAP.labels) {
@@ -311,34 +300,27 @@ function update() {
 }
 $("text").maxLength = MAXLEN;
 $("text").addEventListener("input", update);
-$("nick").textContent = Q.get("nick") ? "— " + Q.get("nick") : "";
 if (me) $("streamer").innerHTML = "Стример сейчас в квадрате <b>" + grid(me.x, me.y) + "</b> — нажми ◎, чтобы найти его";
 $("grip").onclick = () => { $("sheet").classList.toggle("min"); setTimeout(draw, 220); };
 
 $("send").onclick = () => {
   if ($("send").disabled) return;
-  const data = { v: 1, x: pick.x, y: pick.y, place, text: $("text").value.trim().slice(0, MAXLEN) };
-  if (inTelegram) {
-    TG.sendData(JSON.stringify(data));                         // окно закроется, бот получит записку
-  } else {
-    message("Это предпросмотр", "В Telegram сейчас ушло бы:\n" + JSON.stringify(data, null, 1));
-  }
+  sendNote({ where: "xy", x: pick.x, y: pick.y, place, text: $("text").value });
 };
-
-function message(title, text) {
-  $("modalTitle").textContent = title; $("modalBody").textContent = text;
-  $("modal").classList.remove("hide");
-}
-$("modalOk").onclick = () => $("modal").classList.add("hide");
 $("helpBtn").onclick = () => message("Как это работает",
   "1. Ткни на карте, где спрятать записку. Можно приблизить двумя пальцами.\n" +
   "2. Выбери, куда положить: «Ближайший ящик» — шкаф, мусорка или бардачок рядом с точкой.\n" +
   "3. Напиши текст и нажми «Спрятать записку».\n\n" +
   "Модератор проверит записку, и она появится в игре. Стример найдёт её с телефоном-«Локатором» и прочитает в эфире.");
 
-if (TG) { try { TG.ready(); TG.expand(); TG.setHeaderColor && TG.setHeaderColor("#121212"); } catch (e) {} }
-window.addEventListener("resize", resize);
-resize();
+// карта грузится (≈2 МБ) только когда зритель открыл этот экран
+let loading = null;
+onShow.map = () => {
+  resize();
+  showNick();
+  if (!loading) loading = load().then(() => { window.__ready = true; });
+};
+window.addEventListener("resize", () => { if (document.body.dataset.screen === "map") resize(); });
 renderPlaces();
 update();
-load().then(() => { window.__ready = true; });
+if (Q.get("screen") === "map") go("map");
