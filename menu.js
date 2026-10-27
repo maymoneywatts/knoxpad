@@ -147,7 +147,8 @@ function renderHome() {
   showNick();
   // положение приходит в ссылке от бота — оно устаревает: старше 3 минут (или стримера не было в игре) — «обновить»
   const stale = !Q.has("pt") || Date.now() / 1000 - Number(Q.get("pt")) > 180;
-  $("hStreamer").innerHTML = (me ? "в квадрате <b>" + grid(me.x, me.y) + "</b>" + (stale ? " <small>(было)</small>" : "") : "не в игре — записка подождёт его")
+  $("hStreamer").innerHTML = (me ? "в квадрате <b>" + grid(me.x, me.y) + "</b>" + (stale ? " <small>(было)</small>" : "")
+    : stale ? "где он сейчас — нажми «обновить»" : "не в игре — записка подождёт его")
     + (stale && inTelegram ? ' <button class="link" id="posRefresh">обновить</button>' : "");
   if ($("posRefresh")) $("posRefresh").onclick = () => toBot({ v: 2, act: "pos" });
   const why = blockReason();
@@ -261,7 +262,13 @@ onShow.coins = () => {
     $("starsPacks").appendChild(b);
   }
 };
-$("twLogin").onclick = () => toBot({ v: 2, act: "twitch" });
+// вход одной кнопкой: открываем Twitch прямо отсюда (адрес дал бот), вернёмся в бота уже привязанными
+$("twLogin").onclick = () => {
+  const u = Q.get("twu");
+  if (!u || !/^https:\/\/id\.twitch\.tv\//.test(u)) return toBot({ v: 2, act: "twitch" });
+  try { inTelegram ? TG.openLink(u) : window.open(u, "_blank"); } catch (e) { window.open(u, "_blank"); }
+  if (inTelegram) setTimeout(() => { try { TG.close(); } catch (e) {} }, 400);
+};
 $("numCopy").onclick = () => {
   const done = () => { $("numCopy").textContent = "скопировано"; setTimeout(() => ($("numCopy").textContent = "скопировать"), 1500); };
   try { navigator.clipboard.writeText(ST.tw).then(done, () => message("Твой ник для доната", ST.tw)); } catch (e) { message("Твой ник для доната", ST.tw); }

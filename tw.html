@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>KNOXPAD — вход через Twitch</title>
+<style>
+  body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #14110f; color: #ece6dc;
+    font: 16px/1.5 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; text-align: center; }
+  .box { padding: 28px 24px; max-width: 360px; }
+  a { display: inline-block; margin-top: 14px; padding: 12px 22px; border-radius: 12px; background: #9146ff; color: #fff; text-decoration: none; font-weight: 600; }
+  small { color: #a99f90; }
+</style>
+</head>
+<body>
+<div class="box" id="box">Возвращаю в бота…</div>
+<script>
+// Twitch вернул сюда вход зрителя (#access_token=…&state=имя_бота). Токен уходит только в бот — ссылкой
+// t.me/<бот>?start=tw_<токен>: бот спросит у Twitch, чей это вход, привяжет аккаунт и сразу отзовёт токен.
+(function () {
+  var h = new URLSearchParams(location.hash.slice(1)), q = new URLSearchParams(location.search);
+  var token = h.get("access_token") || "", bot = h.get("state") || q.get("state") || "";
+  var box = document.getElementById("box");
+  if (!/^[A-Za-z0-9_]{5,32}$/.test(bot)) { box.textContent = "Не вышло: неизвестный бот. Начни вход заново из бота."; return; }
+  if (!/^[A-Za-z0-9]{10,60}$/.test(token)) {
+    box.innerHTML = "Вход в Twitch отменён.<br><a href='https://t.me/" + bot + "'>Вернуться в бота</a>";
+    return;
+  }
+  var url = "https://t.me/" + bot + "?start=tw_" + token;
+  history.replaceState(null, "", location.pathname);           // токен не остаётся в истории браузера
+  box.innerHTML = "Готово! Возвращаю в бота…<br><a href='" + url + "'>Открыть бота</a><br><small>если не открылся сам</small>";
+  location.replace(url);
+})();
+</script>
+</body>
+</html>
