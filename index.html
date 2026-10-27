@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Oswald:wght@600;700&family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=4">
+<link rel="stylesheet" href="style.css?v=5">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -151,28 +151,33 @@
   </div>
 </section>
 
-<!-- KNOXCOIN: счёт и привязка донатов -->
+<!-- KNOXCOIN: счёт и как пополнить -->
 <section class="screen page" id="scrCoins">
   <header class="pz-bar static">
     <button class="pz-btn icon back" aria-label="Назад">‹</button>
-    <div class="title"><span id="coinsTitle">KnoxCoin</span><small>монеты за донаты стримеру</small></div>
+    <div class="title"><span id="coinsTitle">KnoxCoin</span><small>твой счёт в мире стримера</small></div>
     <span class="spacer"></span>
   </header>
   <div class="pad">
     <div class="price" id="coinsBal"></div>
-    <div class="pz-panel card">
-      <p id="coinsRate"></p>
-      <ul class="facts" id="coinsPrices"></ul>
+    <div class="pz-panel card"><ul class="facts" id="coinsPrices"></ul></div>
+
+    <div class="label hide" id="twLabel">За просмотр стрима</div>
+    <div class="pz-panel card hide" id="twCard">
+      <p id="twText"></p>
+      <button class="pz-btn big twitch hide" id="twLogin">Войти через Twitch</button>
     </div>
-    <div class="label">Привязка донатов</div>
+
+    <div class="label">За донат</div>
     <div class="pz-panel card">
-      <p id="coinsNicks"></p>
-      <div class="code hide" id="coinsCode"><small>твой код</small><b id="coinsCodeVal"></b><small id="coinsCodeUntil"></small></div>
-      <p class="muted">Нажми «Получить код» — бот пришлёт 6 цифр. Вставь их в сообщение к донату (сумма любая): ник доната привяжется к тебе, и дальше все донаты с этим ником сами пойдут на твой счёт.</p>
+      <div class="code hide" id="numBox"><small>твой ник для доната</small><b id="numVal"></b><button class="link" id="numCopy">скопировать</button></div>
+      <p id="numText"></p>
+      <button class="pz-btn big blood" id="coinsDonate">Задонатить</button>
     </div>
-    <button class="pz-btn big" id="coinsGetCode">Получить код</button>
-    <button class="pz-btn big blood" id="coinsDonate">Задонатить</button>
-    <p class="foot">Код одноразовый: на стриме его увидят уже использованным — он никому ничего не даст. Чужой привязанный ник код не перепривяжет.</p>
+
+    <div class="label hide" id="starsLabel">Звёздами Telegram</div>
+    <div class="chips wrap hide" id="starsPacks"></div>
+    <p class="foot" id="coinsFoot">Ник Twitch подтверждён входом в Twitch: если кто-то впишет твой ник, он просто подарит тебе монеты.</p>
   </div>
 </section>
 
@@ -218,7 +223,7 @@
   </div>
 </div>
 
-<script src="menu.js?v=4"></script>
-<script src="app.js?v=4"></script>
+<script src="menu.js?v=5"></script>
+<script src="app.js?v=5"></script>
 </body>
 </html>

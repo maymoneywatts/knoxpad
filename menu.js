@@ -5,7 +5,8 @@
 // можно писать следующую записку, left — сколько осталось на сегодня, why — почему писать нельзя, boss=0/1, price,
 // donate — ссылка на донат, screen — сразу открыть экран (map).
 // KnoxCoin (если стример включил): coins — баланс, cn / cb — цена записки / босса, cur — название монет, rate — монет
-// за 1 ₽, nicks — привязанные ники доната, code / cu — действующий код привязки и до какого времени (unix, с).
+// за 1 ₽ доната, num — личный номер для сообщения к донату, tw — привязанный Twitch, wh — монет за час просмотра
+// (нет — стример не подключил Twitch), sp — наборы звёзд через запятую, ss — монет за звезду, free=1 — бесплатная записка.
 "use strict";
 const $ = (id) => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
@@ -39,9 +40,11 @@ const ST = {
   cb: Number(Q.get("cb")) || 0,
   cur: Q.get("cur") || "KnoxCoin",
   rate: Q.get("rate") || "1",
-  nicks: (Q.get("nicks") || "").split(",").filter(Boolean),
-  code: /^\d{6}$/.test(Q.get("code") || "") ? Q.get("code") : "",
-  cu: Number(Q.get("cu")) || 0,
+  num: /^\d{6}$/.test(Q.get("num") || "") ? Q.get("num") : "",
+  tw: Q.get("tw") || "",
+  wh: Number(Q.get("wh")) || 0,
+  sp: (Q.get("sp") || "").split(",").map(Number).filter((n) => n > 0).slice(0, 4),
+  ss: Number(Q.get("ss")) || 1,
   free: Q.get("free") === "1",                      // бесплатная записка недели ещё не потрачена
 };
 const COINS = ST.coins !== null;
@@ -123,7 +126,7 @@ const noteCost = () => (COINS && !ST.free ? ST.cn : 0);
 // хватает ли монет; нет — объясняем и ведём на экран счёта
 function canPay(cost) {
   if (!COINS || !cost || ST.coins >= cost) return true;
-  message("Не хватает " + ST.cur, "Нужно " + fmt(cost) + ", у тебя " + fmt(ST.coins) + ". Монеты дают за донаты стримеру — привяжи ник на экране «" + ST.cur + "».");
+  message("Не хватает " + ST.cur, "Нужно " + fmt(cost) + ", у тебя " + fmt(ST.coins) + ". Монеты дают за просмотр стрима, за донаты с твоим ником Twitch и за звёзды — всё на экране «" + ST.cur + "».");
   go("coins");
   return false;
 }
@@ -153,7 +156,7 @@ function renderHome() {
     $("hCoinsName").textContent = ST.cur;
     $("hCoins").textContent = "💰 " + fmt(ST.coins);
     $("coinsTileTitle").textContent = ST.cur;
-    $("coinsTileSub").textContent = "На счёте " + fmt(ST.coins) + " · " + (ST.nicks.length ? "донаты привязаны" : "привяжи донаты");
+    $("coinsTileSub").textContent = "На счёте " + fmt(ST.coins) + " · " + (ST.wh && !ST.tw ? "войди через Twitch — монеты за просмотр" : "как пополнить");
     $("homeFoot").textContent = (ST.cn ? "Записка — " + fmt(ST.cn) + " " + ST.cur + (ST.free ? ", но одна в неделю бесплатно — твоя ещё не потрачена. " : ". ") : "Записки бесплатные. ")
       + "Отклонят — монеты вернутся. Мат, оскорбления и ссылки модератор не пропустит.";
   }
@@ -220,26 +223,43 @@ onShow.towns = renderTowns;
 onShow.coins = () => {
   $("coinsTitle").textContent = ST.cur;
   $("coinsBal").innerHTML = "<small>на счёте</small> " + fmt(ST.coins) + " " + ST.cur;
-  $("coinsRate").textContent = "Донат стримеру — и на счёт придёт " + ST.rate.replace(".", ",") + " " + ST.cur + " за каждый рубль.";
   $("coinsPrices").innerHTML = "";
   for (const [t, c] of [["записка", ST.cn], ["босс", ST.cb]]) {
     const li = document.createElement("li");
     li.textContent = t + " — " + (c ? fmt(c) + " " + ST.cur : "бесплатно") + (t === "записка" && c && ST.free ? " (на этой неделе одна — бесплатно)" : "");
     $("coinsPrices").appendChild(li);
   }
-  $("coinsNicks").textContent = ST.nicks.length ? "Привязано: " + ST.nicks.join(", ") + ". Донаты с этих ников сами идут на счёт."
-    : "Донаты ещё не привязаны — монеты за них не найдут твой счёт.";
-  const live = ST.code && ST.cu * 1000 > Date.now();
-  $("coinsCode").classList.toggle("hide", !live);
-  if (live) {
-    $("coinsCodeVal").textContent = ST.code;
-    const d = new Date(ST.cu * 1000);
-    $("coinsCodeUntil").textContent = "действует до " + d.toLocaleString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
-  }
-  $("coinsGetCode").textContent = live ? "Новый код" : "Получить код";
+  // Twitch: монеты за просмотр (если стример подключил Twitch)
+  $("twLabel").classList.toggle("hide", !ST.wh);
+  $("twCard").classList.toggle("hide", !ST.wh);
+  $("twText").textContent = ST.tw ? "Twitch «" + ST.tw + "» привязан. Пока идёт стрим, за каждый час просмотра — " + fmt(ST.wh) + " " + ST.cur + "."
+    : "Смотри стрим на Twitch — за каждый час " + fmt(ST.wh) + " " + ST.cur + ". Войди один раз своим Twitch, чтобы я знал, что аккаунт твой.";
+  $("twLogin").classList.toggle("hide", !!ST.tw);
+  // донат: в имя доната — свой ник Twitch (вход подтвердил Twitch)
+  $("numBox").classList.toggle("hide", !ST.tw);
+  $("numVal").textContent = ST.tw;
+  $("numText").textContent = ST.tw
+    ? "Донатишь — впиши этот ник в поле «Имя» на странице доната. Тогда за каждый рубль придёт " + ST.rate.replace(".", ",") + " " + ST.cur + "."
+    : ST.wh ? "Сначала войди через Twitch (выше): потом впишешь свой ник Twitch в имя доната — и монеты за донат придут тебе. Без Twitch — пополняй звёздами."
+      : "Монеты за донат приходят по нику Twitch — стример его ещё не подключил. Пока пополняй звёздами.";
   $("coinsDonate").classList.toggle("hide", !ST.donate);
+  // звёзды Telegram
+  $("starsLabel").classList.toggle("hide", !ST.sp.length);
+  $("starsPacks").classList.toggle("hide", !ST.sp.length);
+  $("starsPacks").innerHTML = "";
+  for (const n of ST.sp) {
+    const b = document.createElement("button");
+    b.className = "chip star";
+    b.textContent = "⭐ " + n + " → " + fmt(Math.floor(n * ST.ss)) + " " + ST.cur;
+    b.onclick = () => toBot({ v: 2, act: "stars", pack: n });
+    $("starsPacks").appendChild(b);
+  }
 };
-$("coinsGetCode").onclick = () => toBot({ v: 2, act: "code" });
+$("twLogin").onclick = () => toBot({ v: 2, act: "twitch" });
+$("numCopy").onclick = () => {
+  const done = () => { $("numCopy").textContent = "скопировано"; setTimeout(() => ($("numCopy").textContent = "скопировать"), 1500); };
+  try { navigator.clipboard.writeText(ST.tw).then(done, () => message("Твой ник для доната", ST.tw)); } catch (e) { message("Твой ник для доната", ST.tw); }
+};
 $("coinsDonate").onclick = () => openDonate();
 function openDonate() {
   if (!ST.donate) return;
