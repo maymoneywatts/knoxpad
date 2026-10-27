@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Caveat:wght@500;700&family=Oswald:wght@600;700&family=PT+Sans+Narrow:wght@400;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="style.css?v=3">
+<link rel="stylesheet" href="style.css?v=4">
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 </head>
 <body>
@@ -20,6 +20,7 @@
       <div class="row"><span class="k">Подпись</span><b class="nickText">—</b><button class="link" id="nickEdit">изменить</button></div>
       <div class="row"><span class="k">Стример</span><span id="hStreamer">не в игре</span></div>
       <div class="row" id="hLimitRow"><span class="k">Записки</span><span id="hLimit"></span></div>
+      <div class="row hide" id="hCoinsRow"><span class="k" id="hCoinsName">KnoxCoin</span><b id="hCoins">0</b><button class="link" id="coinsEdit">пополнить</button></div>
     </div>
 
     <div class="label">Оставить записку</div>
@@ -40,6 +41,10 @@
 
     <div class="label">Ещё</div>
     <div class="tiles">
+      <button class="tile hide" data-go="coins" id="coinsTile">
+        <svg viewBox="0 0 32 32"><circle cx="16" cy="16" r="11"/><circle cx="16" cy="16" r="7"/><path class="red" d="M13 13h5a2 2 0 0 1 0 4h-4a2 2 0 0 0 0 4h5 M16 11v2 M16 21v2"/></svg>
+        <span><b id="coinsTileTitle">KnoxCoin</b><small id="coinsTileSub">Твой счёт и привязка донатов</small></span>
+      </button>
       <button class="tile boss" data-go="boss">
         <svg viewBox="0 0 32 32"><path d="M8 13c0-6 3.6-9 8-9s8 3 8 9c0 3-1 5-3 6v4H11v-4c-2-1-3-3-3-6z"/><circle class="red fill" cx="12.5" cy="13" r="2"/><circle class="red fill" cx="19.5" cy="13" r="2"/><path d="M13 23v4 M16 23v4 M19 23v4"/></svg>
         <span><b>Заказать босса</b><small id="bossTileSub">Донат — и начнётся охота</small></span>
@@ -54,7 +59,7 @@
         <span><b>Как это работает</b><small>Модерация, «Локатор», что увидит стрим</small></span>
       </button>
     </div>
-    <p class="foot">Записки бесплатные. Мат, оскорбления и ссылки модератор не пропустит.</p>
+    <p class="foot" id="homeFoot">Записки бесплатные. Мат, оскорбления и ссылки модератор не пропустит.</p>
   </div>
 </section>
 
@@ -136,11 +141,38 @@
         <li>сбивает с ног</li>
         <li>на экране стрима — кровавое «ОХОТА НАЧАЛАСЬ»</li>
       </ul>
-      <p class="muted">В сообщении к донату напиши боевой клич — его увидят на стриме. Босса выпускает стример кнопкой.</p>
+      <p class="muted" id="bossHow">В сообщении к донату напиши боевой клич — его увидят на стриме. Босса выпускает стример кнопкой.</p>
     </div>
     <div class="price" id="bossPrice"></div>
+    <div class="paper small hide" id="bossCryBox"><input id="bossCry" maxlength="120" placeholder="твой боевой клич" autocomplete="off"></div>
+    <button class="pz-btn big blood hide" id="bossBuy">Выпустить босса</button>
     <button class="pz-btn big blood" id="bossDonate">Задонатить</button>
     <p class="foot" id="bossNote"></p>
+  </div>
+</section>
+
+<!-- KNOXCOIN: счёт и привязка донатов -->
+<section class="screen page" id="scrCoins">
+  <header class="pz-bar static">
+    <button class="pz-btn icon back" aria-label="Назад">‹</button>
+    <div class="title"><span id="coinsTitle">KnoxCoin</span><small>монеты за донаты стримеру</small></div>
+    <span class="spacer"></span>
+  </header>
+  <div class="pad">
+    <div class="price" id="coinsBal"></div>
+    <div class="pz-panel card">
+      <p id="coinsRate"></p>
+      <ul class="facts" id="coinsPrices"></ul>
+    </div>
+    <div class="label">Привязка донатов</div>
+    <div class="pz-panel card">
+      <p id="coinsNicks"></p>
+      <div class="code hide" id="coinsCode"><small>твой код</small><b id="coinsCodeVal"></b><small id="coinsCodeUntil"></small></div>
+      <p class="muted">Нажми «Получить код» — бот пришлёт 6 цифр. Вставь их в сообщение к донату (сумма любая): ник доната привяжется к тебе, и дальше все донаты с этим ником сами пойдут на твой счёт.</p>
+    </div>
+    <button class="pz-btn big" id="coinsGetCode">Получить код</button>
+    <button class="pz-btn big blood" id="coinsDonate">Задонатить</button>
+    <p class="foot">Код одноразовый: на стриме его увидят уже использованным — он никому ничего не даст. Чужой привязанный ник код не перепривяжет.</p>
   </div>
 </section>
 
@@ -186,7 +218,7 @@
   </div>
 </div>
 
-<script src="menu.js?v=3"></script>
-<script src="app.js?v=3"></script>
+<script src="menu.js?v=4"></script>
+<script src="app.js?v=4"></script>
 </body>
 </html>

@@ -4,6 +4,8 @@
 // Параметры адреса подставляет бот: nick, max — длина текста, sx/sy — где стример, next — с какого времени (unix, с)
 // можно писать следующую записку, left — сколько осталось на сегодня, why — почему писать нельзя, boss=0/1, price,
 // donate — ссылка на донат, screen — сразу открыть экран (map).
+// KnoxCoin (если стример включил): coins — баланс, cn / cb — цена записки / босса, cur — название монет, rate — монет
+// за 1 ₽, nicks — привязанные ники доната, code / cu — действующий код привязки и до какого времени (unix, с).
 "use strict";
 const $ = (id) => document.getElementById(id);
 const Q = new URLSearchParams(location.search);
@@ -32,7 +34,18 @@ const ST = {
   boss: Q.get("boss") !== "0",
   price: Number(Q.get("price")) || 500,
   donate: Q.get("donate") || "",
+  coins: Q.has("coins") ? Number(Q.get("coins")) || 0 : null,     // null — KnoxCoin выключен
+  cn: Number(Q.get("cn")) || 0,
+  cb: Number(Q.get("cb")) || 0,
+  cur: Q.get("cur") || "KnoxCoin",
+  rate: Q.get("rate") || "1",
+  nicks: (Q.get("nicks") || "").split(",").filter(Boolean),
+  code: /^\d{6}$/.test(Q.get("code") || "") ? Q.get("code") : "",
+  cu: Number(Q.get("cu")) || 0,
+  free: Q.get("free") === "1",                      // бесплатная записка недели ещё не потрачена
 };
+const COINS = ST.coins !== null;
+const fmt = (n) => String(n).replace(/\B(?=(\d{3})+(?!\d))/g, " ");
 
 // ------------------------------------------------------------ подпись: из бота, иначе из памяти Telegram / браузера
 const NICK_KEY = "knoxpad_nick";
@@ -67,7 +80,7 @@ function blockReason() {
 }
 
 // ------------------------------------------------------------ экраны
-const SCREENS = { home: "scrHome", map: "scrMap", note: "scrNote", towns: "scrTowns", boss: "scrBoss", nick: "scrNick", help: "scrHelp" };
+const SCREENS = { home: "scrHome", map: "scrMap", note: "scrNote", towns: "scrTowns", boss: "scrBoss", nick: "scrNick", help: "scrHelp", coins: "scrCoins" };
 const stack = ["home"];
 const onShow = {};                       // экран -> что сделать при показе
 function show(name) {
@@ -93,16 +106,9 @@ function message(title, text) {
 }
 $("modalOk").onclick = () => $("modal").classList.add("hide");
 
-// ------------------------------------------------------------ отправка записки боту
+// ------------------------------------------------------------ отправка боту (записка, код, босс)
 let afterNick = null;
-function sendNote(data) {
-  const why = blockReason();
-  if (why) return message("Пока нельзя", why);
-  if (!ST.nick) {                       // без подписи бот всё равно спросит — спросим здесь
-    afterNick = () => sendNote(data);
-    return go("nick");
-  }
-  const payload = Object.assign({ v: 2, nick: ST.nick }, data, { text: String(data.text || "").trim().slice(0, MAXLEN) });
+function toBot(payload) {
   if (inTelegram) {
     try {
       TG.sendData(JSON.stringify(payload));                   // окно закроется, бот ответит в чате
@@ -113,6 +119,24 @@ function sendNote(data) {
     message("Это предпросмотр", "В Telegram сейчас ушло бы:\n" + JSON.stringify(payload, null, 1));
   }
 }
+const noteCost = () => (COINS && !ST.free ? ST.cn : 0);
+// хватает ли монет; нет — объясняем и ведём на экран счёта
+function canPay(cost) {
+  if (!COINS || !cost || ST.coins >= cost) return true;
+  message("Не хватает " + ST.cur, "Нужно " + fmt(cost) + ", у тебя " + fmt(ST.coins) + ". Монеты дают за донаты стримеру — привяжи ник на экране «" + ST.cur + "».");
+  go("coins");
+  return false;
+}
+function sendNote(data) {
+  const why = blockReason();
+  if (why) return message("Пока нельзя", why);
+  if (!canPay(noteCost())) return;
+  if (!ST.nick) {                       // без подписи бот всё равно спросит — спросим здесь
+    afterNick = () => sendNote(data);
+    return go("nick");
+  }
+  toBot(Object.assign({ v: 2, nick: ST.nick }, data, { text: String(data.text || "").trim().slice(0, MAXLEN) }));
+}
 
 // ------------------------------------------------------------ главная
 function renderHome() {
@@ -121,8 +145,23 @@ function renderHome() {
   const why = blockReason();
   $("hLimit").textContent = why || (ST.left !== null ? "можно писать · сегодня осталось " + ST.left : "можно писать");
   $("hLimit").classList.toggle("bad", !!why);
-  $("bossTileSub").textContent = ST.boss ? "Донат от " + ST.price + " ₽ — и начнётся охота" : "Сейчас выключено";
+  $("bossTileSub").textContent = !ST.boss ? "Сейчас выключено" : COINS ? fmt(ST.cb) + " " + ST.cur + " — и начнётся охота"
+    : "Донат от " + ST.price + " ₽ — и начнётся охота";
+  $("hCoinsRow").classList.toggle("hide", !COINS);
+  $("coinsTile").classList.toggle("hide", !COINS);
+  if (COINS) {
+    $("hCoinsName").textContent = ST.cur;
+    $("hCoins").textContent = "💰 " + fmt(ST.coins);
+    $("coinsTileTitle").textContent = ST.cur;
+    $("coinsTileSub").textContent = "На счёте " + fmt(ST.coins) + " · " + (ST.nicks.length ? "донаты привязаны" : "привяжи донаты");
+    $("homeFoot").textContent = (ST.cn ? "Записка — " + fmt(ST.cn) + " " + ST.cur + (ST.free ? ", но одна в неделю бесплатно — твоя ещё не потрачена. " : ". ") : "Записки бесплатные. ")
+      + "Отклонят — монеты вернутся. Мат, оскорбления и ссылки модератор не пропустит.";
+  }
+  const label = "Спрятать записку" + (COINS && ST.cn ? " · " + (ST.free ? "бесплатно" : fmt(ST.cn)) : "");
+  $("send2").textContent = label;
+  if ($("send")) $("send").textContent = label;
 }
+$("coinsEdit").onclick = () => go("coins");
 onShow.home = renderHome;
 document.querySelectorAll(".tile[data-go]").forEach((t) => {
   t.onclick = () => {
@@ -177,18 +216,62 @@ function renderTowns() {
 }
 onShow.towns = renderTowns;
 
+// ------------------------------------------------------------ счёт KnoxCoin
+onShow.coins = () => {
+  $("coinsTitle").textContent = ST.cur;
+  $("coinsBal").innerHTML = "<small>на счёте</small> " + fmt(ST.coins) + " " + ST.cur;
+  $("coinsRate").textContent = "Донат стримеру — и на счёт придёт " + ST.rate.replace(".", ",") + " " + ST.cur + " за каждый рубль.";
+  $("coinsPrices").innerHTML = "";
+  for (const [t, c] of [["записка", ST.cn], ["босс", ST.cb]]) {
+    const li = document.createElement("li");
+    li.textContent = t + " — " + (c ? fmt(c) + " " + ST.cur : "бесплатно") + (t === "записка" && c && ST.free ? " (на этой неделе одна — бесплатно)" : "");
+    $("coinsPrices").appendChild(li);
+  }
+  $("coinsNicks").textContent = ST.nicks.length ? "Привязано: " + ST.nicks.join(", ") + ". Донаты с этих ников сами идут на счёт."
+    : "Донаты ещё не привязаны — монеты за них не найдут твой счёт.";
+  const live = ST.code && ST.cu * 1000 > Date.now();
+  $("coinsCode").classList.toggle("hide", !live);
+  if (live) {
+    $("coinsCodeVal").textContent = ST.code;
+    const d = new Date(ST.cu * 1000);
+    $("coinsCodeUntil").textContent = "действует до " + d.toLocaleString("ru-RU", { day: "numeric", month: "long", hour: "2-digit", minute: "2-digit" });
+  }
+  $("coinsGetCode").textContent = live ? "Новый код" : "Получить код";
+  $("coinsDonate").classList.toggle("hide", !ST.donate);
+};
+$("coinsGetCode").onclick = () => toBot({ v: 2, act: "code" });
+$("coinsDonate").onclick = () => openDonate();
+function openDonate() {
+  if (!ST.donate) return;
+  try { inTelegram ? TG.openLink(ST.donate) : window.open(ST.donate, "_blank"); } catch (e) { window.open(ST.donate, "_blank"); }
+}
+
 // ------------------------------------------------------------ босс
 onShow.boss = () => {
+  if (COINS) {
+    $("bossPrice").innerHTML = ST.boss ? "<small>стоит</small> " + fmt(ST.cb) + " " + ST.cur : "<small>сейчас</small> выключено";
+    $("bossHow").textContent = "Напиши боевой клич — его увидят на стриме. Босса выпускает стример кнопкой; не выпустит — монеты вернутся.";
+    const enough = ST.coins >= ST.cb;
+    $("bossCryBox").classList.toggle("hide", !ST.boss);
+    $("bossBuy").classList.toggle("hide", !ST.boss);
+    $("bossBuy").textContent = enough ? "Выпустить босса · " + fmt(ST.cb) : "Не хватает " + fmt(ST.cb - ST.coins) + " " + ST.cur;
+    $("bossDonate").classList.add("hide");
+    $("bossNote").textContent = "На счёте " + fmt(ST.coins) + " " + ST.cur + ".";
+    return;
+  }
   $("bossPrice").innerHTML = ST.boss ? "<small>донат от</small> " + ST.price + " ₽" : "<small>сейчас</small> выключено";
   $("bossDonate").textContent = "Задонатить " + ST.price + " ₽";
   $("bossDonate").classList.toggle("hide", !(ST.boss && ST.donate));
   $("bossNote").textContent = !ST.boss ? "Стример пока выключил босса за донат."
     : ST.donate ? "Откроется страница доната стримера." : "Ссылку на донат стример даст на стриме.";
 };
-$("bossDonate").onclick = () => {
-  if (!ST.donate) return;
-  try { inTelegram ? TG.openLink(ST.donate) : window.open(ST.donate, "_blank"); } catch (e) { window.open(ST.donate, "_blank"); }
-};
+$("bossDonate").onclick = () => openDonate();
+function buyBoss() {
+  if (!canPay(ST.cb)) return;
+  if (!ST.nick) { afterNick = buyBoss; return go("nick"); }    // ник станет именем босса
+  toBot({ v: 2, act: "boss", nick: ST.nick, text: $("bossCry").value.trim().slice(0, 120) });
+}
+$("bossBuy").onclick = buyBoss;
 
 // ------------------------------------------------------------ подпись
 onShow.nick = () => {
