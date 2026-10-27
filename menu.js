@@ -9,6 +9,7 @@
 // (нет — стример не подключил Twitch), sp — наборы звёзд через запятую, ss — монет за звезду, free=1 — бесплатная записка.
 "use strict";
 const $ = (id) => document.getElementById(id);
+const esc = (v) => String(v ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 const Q = new URLSearchParams(location.search);
 const TG = window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData !== undefined ? window.Telegram.WebApp : null;
 // открыто кнопкой под полем ввода — initData пустой (так задумано в Telegram), поэтому узнаём Telegram по платформе
@@ -144,7 +145,11 @@ function sendNote(data) {
 // ------------------------------------------------------------ главная
 function renderHome() {
   showNick();
-  $("hStreamer").innerHTML = me ? "в квадрате <b>" + grid(me.x, me.y) + "</b>" : "не в игре — записка подождёт его";
+  // положение приходит в ссылке от бота — оно устаревает: старше 3 минут (или стримера не было в игре) — «обновить»
+  const stale = !Q.has("pt") || Date.now() / 1000 - Number(Q.get("pt")) > 180;
+  $("hStreamer").innerHTML = (me ? "в квадрате <b>" + grid(me.x, me.y) + "</b>" + (stale ? " <small>(было)</small>" : "") : "не в игре — записка подождёт его")
+    + (stale && inTelegram ? ' <button class="link" id="posRefresh">обновить</button>' : "");
+  if ($("posRefresh")) $("posRefresh").onclick = () => toBot({ v: 2, act: "pos" });
   const why = blockReason();
   $("hLimit").textContent = why || (ST.left !== null ? "можно писать · сегодня осталось " + ST.left : "можно писать");
   $("hLimit").classList.toggle("bad", !!why);
@@ -238,8 +243,9 @@ onShow.coins = () => {
   // донат: в имя доната — свой ник Twitch (вход подтвердил Twitch)
   $("numBox").classList.toggle("hide", !ST.tw);
   $("numVal").textContent = ST.tw;
-  $("numText").textContent = ST.tw
-    ? "Донатишь — впиши этот ник в поле «Имя» на странице доната. Тогда за каждый рубль придёт " + ST.rate.replace(".", ",") + " " + ST.cur + "."
+  $("numText").innerHTML = ST.tw
+    ? "<ol class=\"steps\"><li>Нажми «Задонатить» — откроется страница доната.</li><li>В поле «Имя» впиши этот ник: <b>" + esc(ST.tw) + "</b>.</li>"
+      + "<li>Сумма — сколько хочешь: 1 ₽ = " + ST.rate.replace(".", ",") + " " + esc(ST.cur) + ".</li><li>Отправь — через минуту бот напишет «+…».</li></ol>"
     : ST.wh ? "Сначала войди через Twitch (выше): потом впишешь свой ник Twitch в имя доната — и монеты за донат придут тебе. Без Twitch — пополняй звёздами."
       : "Монеты за донат приходят по нику Twitch — стример его ещё не подключил. Пока пополняй звёздами.";
   $("coinsDonate").classList.toggle("hide", !ST.donate);
